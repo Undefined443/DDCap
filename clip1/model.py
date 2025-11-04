@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from typing import Tuple, Union
-from timm.models.layers import DropPath
+from timm.layers import DropPath
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -229,15 +229,15 @@ class VisualTransformer(nn.Module):
         x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
         x = x + self.positional_embedding.to(x.dtype)
         # x = self.ln_pre(x)
-        x = checkpoint.checkpoint(self.ln_pre, x)
+        x = checkpoint.checkpoint(self.ln_pre, x, use_reentrant=False)
 
         x = x.permute(1, 0, 2)  # NLD -> LND
         # x = self.transformer(x)
-        x = checkpoint.checkpoint(self.transformer, x)
+        x = checkpoint.checkpoint(self.transformer, x, use_reentrant=False)
         x = x.permute(1, 0, 2)  # LND -> NLD
 
         # x_cls = self.ln_post(x[:, 0, :])
-        x_cls = checkpoint.checkpoint(self.ln_post, x[:, 0, :])
+        x_cls = checkpoint.checkpoint(self.ln_post, x[:, 0, :], use_reentrant=False)
 
         if self.proj is not None:
             x_cls = x_cls @ self.proj

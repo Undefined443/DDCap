@@ -2,11 +2,12 @@ import os
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-import torch.cuda.amp as amp
+import torch.amp as amp
 from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
 from enum import Enum
-from transformers import GPT2Tokenizer, AdamW, get_linear_schedule_with_warmup
+from transformers import GPT2Tokenizer, get_linear_schedule_with_warmup
+from torch.optim import AdamW
 from transformers.models.gpt2.configuration_gpt2 import GPT2Config
 from tf_adpt import GPT2LMHeadModel
 from tqdm import tqdm
@@ -25,7 +26,7 @@ import torch.multiprocessing as mp
 import skimage.io as io1
 from PIL import Image
 from PIL import ImageFile
-from timm.models.layers import trunc_normal_
+from timm.layers import trunc_normal_
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import numpy as np
 from lr_scheduler import build_scheduler
@@ -103,11 +104,13 @@ class ClipCocoDataset(Dataset):
         tokens, mask, gt = self.pad_tokens(item)
         img_id = self.image_ids[item]
         # train+restval
-        filename = f"{self.data_root}/train2014/COCO_train2014_{int(img_id):012d}.jpg"
+        # filename = f"{self.data_root}/train2014/COCO_train2014_{int(img_id):012d}.jpg"
+        filename = f"{self.data_root}/train2014/{int(img_id):012d}.jpg"
         try:
             image = io1.imread(filename)
         except:
-            filename = f"{self.data_root}/val2014/COCO_val2014_{int(img_id):012d}.jpg"
+            # filename = f"{self.data_root}/val2014/COCO_val2014_{int(img_id):012d}.jpg"
+            filename = f"{self.data_root}/val2014/{int(img_id):012d}.jpg"
             image = io1.imread(filename)
         image = Image.fromarray(image)
         image = self.preprocess(image)
@@ -160,7 +163,8 @@ class ClipCocoValDataset(Dataset):
         _filename = self.files[item]
         filename = f"{self.data_root}/val2014/{_filename}"
         for x in self.annotation:
-            if 'COCO_val2014_' + str(x['image_id']).zfill(12) + '.jpg' == _filename:
+            # if 'COCO_val2014_' + str(x['image_id']).zfill(12) + '.jpg' == _filename:
+            if str(x['image_id']).zfill(12) + '.jpg' == _filename:
                 caption = x['caption']
                 break
         tokens = torch.tensor(self.tokenizer.encode(caption), dtype=torch.int64)
@@ -736,7 +740,7 @@ def train(model, epoch, train_dataloader, optimizer, lr_scheduler, scaler, args,
         all_mask = torch.clamp(all_mask + padding_mask, -10000, 0)
 
         # predict x0
-        with amp.autocast(enabled=args.enable_amp):
+        with amp.autocast('cuda', enabled=args.enable_amp):
             outputs, len_out = model(tokens, mask_tokens, prefix, all_mask, t)
         logits = outputs.logits
         loss_len = nnf.cross_entropy(len_out, mask.sum(dim=-1).to(torch.long) - 1)
@@ -782,7 +786,7 @@ def parse_args():
     parser.add_argument('--disable-amp', action='store_false', dest='enable_amp')
     parser.set_defaults(enable_amp=True)
 
-    parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
+    parser.add_argument("--local_rank", type=int, default=int(os.environ.get("LOCAL_RANK", 0)), help='local rank for DistributedDataParallel')
     args = parser.parse_args()
     args.out_dir = os.path.join(args.out_dir, args.tag)
     os.makedirs(args.out_dir, exist_ok=True)
@@ -815,7 +819,7 @@ def main(args):
 
     parameters = get_pretrain_param_groups(model, args.lr * 0.1)
     optimizer = AdamW(parameters, lr=args.lr, weight_decay=args.wd)
-    scaler = amp.GradScaler()
+    scaler = amp.GradScaler('cuda')
     model = DDP(model, device_ids=[local_rank], broadcast_buffers=False)
 
     dataset = ClipCocoDataset(args.data_root, args.data, normalize_prefix=args.normalize_prefix)
@@ -857,9 +861,13 @@ if __name__ == '__main__':
     else:
         rank = -1
         world_size = -1
-    dist.init_process_group("nccl", init_method='env://', rank=args.local_rank, world_size=world_size)
+
+    local_rank = args.local_rank
+    torch.cuda.set_device(local_rank)
+    device = torch.device(f'cuda:{local_rank}')
+    dist.init_process_group("nccl", init_method='env://', rank=rank, world_size=world_size, device_id=device)
     torch.distributed.barrier()
-    setup_for_distributed(args.local_rank == 0)  ##### HERE
+    setup_for_distributed(local_rank == 0)  ##### HERE
 
     seed = dist.get_rank() + args.seed
     torch.manual_seed(seed)

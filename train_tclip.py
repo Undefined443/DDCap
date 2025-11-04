@@ -6,7 +6,8 @@ import torch.cuda.amp as amp
 from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
 from enum import Enum
-from transformers import GPT2Tokenizer, AdamW, get_linear_schedule_with_warmup
+from transformers import GPT2Tokenizer, get_linear_schedule_with_warmup
+from torch.optim import AdamW
 from transformers.models.gpt2.configuration_gpt2 import GPT2Config
 from tf_adpt_grad import GPT2LMHeadModel
 from tqdm import tqdm
@@ -27,7 +28,7 @@ import skimage.io as io1
 from PIL import Image, ImageFilter, ImageOps
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-from timm.models.layers import trunc_normal_
+from timm.layers import trunc_normal_
 import numpy as np
 from lr_scheduler import build_scheduler
 from misc import generate2_adpt_if, evaluate_on_coco_caption
@@ -803,7 +804,7 @@ def parse_args():
     parser.add_argument('--disable-amp', action='store_false', dest='enable_amp')
     parser.set_defaults(enable_amp=True)
 
-    parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
+    parser.add_argument("--local_rank", type=int, default=int(os.environ.get("LOCAL_RANK", 0)), help='local rank for DistributedDataParallel')
     args = parser.parse_args()
     args.out_dir = os.path.join(args.out_dir, args.tag)
     os.makedirs(args.out_dir, exist_ok=True)
