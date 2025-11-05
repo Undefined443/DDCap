@@ -3,4 +3,6 @@ data
 results_diff
 captioneval
 MSCOCO_Caption
+IMAGENET
+*.egg-info
 .cache

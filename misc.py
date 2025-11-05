@@ -447,7 +447,7 @@ def evaluate_on_coco_caption(results, res_file, label_file, outfile=None):
         # cap = result['result'].replace('<|startoftext|>', '').replace('<|endoftext|>', '').replace('!', '').replace(' .', '.').strip() #result["ground truth"][0]
         cap = str(result['result'].split('<|endoftext|>')[0].strip())
         parsed_res.append({"image_id": id, "caption": cap})
-    if ((dist.is_initialized() or dist.is_available()) and int(dist.get_rank()) == 0) or not dist.is_available():
+    if not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0:
         json.dump(parsed_res, open(res_file, 'w'))
 
     coco = COCO(label_file)
@@ -467,7 +467,7 @@ def evaluate_on_coco_caption(results, res_file, label_file, outfile=None):
     if not outfile:
         print(result)
     else:
-        if ((dist.is_initialized() or dist.is_available()) and int(dist.get_rank()) == 0) or not dist.is_available():
+        if not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0:
             with open(outfile, 'w') as fp:
                 json.dump(result, fp, indent=4)
     return result
