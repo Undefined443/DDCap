@@ -14,6 +14,7 @@ if version.parse(torch.__version__) >= version.parse("1.6"):
     from torch.cuda.amp import autocast
 else:
     is_amp_available = False
+from transformers import GenerationMixin
 from transformers.activations import ACT2FN
 from transformers.file_utils import (
     ModelOutput,
@@ -965,7 +966,7 @@ class GPT2Model(GPT2PreTrainedModel):
     """,
     GPT2_START_DOCSTRING,
 )
-class GPT2LMHeadModel(GPT2PreTrainedModel):
+class GPT2LMHeadModel(GPT2PreTrainedModel, GenerationMixin):
     _keys_to_ignore_on_load_missing = [r"attn.masked_bias", r"attn.bias", r"lm_head.weight"]
 
     def __init__(self, config):

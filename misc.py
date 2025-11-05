@@ -442,7 +442,8 @@ def evaluate_on_coco_caption(results, res_file, label_file, outfile=None):
     assert label_file.endswith('.json')
     parsed_res = []
     for result in results:
-        id = int(result['image_id'].split('.')[0].split('_')[2])
+        #id = int(result['image_id'].split('.')[0].split('_')[2])
+        id = int(result['image_id'].split('.')[0])
         # cap = result['result'].replace('<|startoftext|>', '').replace('<|endoftext|>', '').replace('!', '').replace(' .', '.').strip() #result["ground truth"][0]
         cap = str(result['result'].split('<|endoftext|>')[0].strip())
         parsed_res.append({"image_id": id, "caption": cap})

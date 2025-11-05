@@ -1,0 +1,41 @@
+[project]
+name = "ddcap"
+version = "0.1.0"
+description = "Training pipelines for discrete diffusion captioning"
+authors = [{name = "Xiao Li", email = "xiaoli3397@gmail.com"}]
+requires-python = ">=3.13"
+dependencies = [
+    "torch",
+    "torchvision",
+    "wandb",
+    "omegaconf",
+    "pytorch-lightning",
+    "timm",
+    "tensorboard",
+    "lmdb",
+    "tqdm",
+    "einops",
+    "ftfy",
+    "cog",
+    "regex>=2025.11.3",
+    "transformers>=4.57.1",
+    "scikit-image>=0.25.2",
+    "matplotlib>=3.10.7",
+]
+
+[project.optional-dependencies]
+extras = [
+    "dall-e @ git+https://github.com/openai/DALL-E.git",
+]
+
+[project.urls]
+repository = "https://github.com/Undefined443/DDCap"
+homepage = "https://github.com/Undefined443/DDCap"
+
+[[tool.uv.index]]
+name = "torch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+
+[tool.uv.sources]
+torch = { index = "torch-cu130" }
+torchvision = { index = "torch-cu130" }

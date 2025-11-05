@@ -3,3 +3,4 @@ data
 results_diff
 captioneval
 MSCOCO_Caption
+.cache
