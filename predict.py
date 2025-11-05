@@ -12,8 +12,6 @@ from typing import Tuple, List, Union, Optional
 from transformers import (
     GPT2Tokenizer,
     GPT2LMHeadModel,
-    AdamW,
-    get_linear_schedule_with_warmup,
 )
 import skimage.io as io
 import PIL.Image
@@ -45,7 +43,7 @@ D = torch.device
 CPU = torch.device("cpu")
 
 
-class Predictor(cog.Predictor):
+class Predictor(cog.BasePredictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
         self.device = torch.device("cuda")
@@ -63,21 +61,19 @@ class Predictor(cog.Predictor):
             model = model.to(self.device)
             self.models[key] = model
 
-    @cog.input("image", type=cog.Path, help="Input image")
-    @cog.input(
-        "model",
-        type=str,
-        options=WEIGHTS_PATHS.keys(),
-        default="coco",
-        help="Model to use",
-    )
-    @cog.input(
-        "use_beam_search",
-        type=bool,
-        default=False,
-        help="Whether to apply beam search to generate the output text",
-    )
-    def predict(self, image, model, use_beam_search):
+    def predict(
+        self,
+        image: cog.Path = cog.Input(description="Input image"),
+        model: str = cog.Input(
+            default="coco",
+            options=list(WEIGHTS_PATHS.keys()),
+            description="Model to use"
+        ),
+        use_beam_search: bool = cog.Input(
+            default=False,
+            description="Whether to apply beam search to generate the output text"
+        )
+    ) -> str:
         """Run a single prediction on the model"""
         image = io.imread(image)
         model = self.models[model]
