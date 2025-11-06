@@ -4,5 +4,8 @@ results_diff
 captioneval
 MSCOCO_Caption
 IMAGENET
-*.egg-info
 .cache
+results
+temp
+*.egg-info
+*.log

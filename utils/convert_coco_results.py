@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import string
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -22,7 +23,15 @@ TRANSLATOR = str.maketrans("", "", string.punctuation)
 
 def normalize(text: str) -> str:
     """Lowercase, strip punctuation, and collapse whitespace for matching."""
-    return " ".join(text.lower().translate(TRANSLATOR).split())
+    # First remove spaces around punctuation, then remove punctuation
+    # This ensures "12:44" and "12 : 44" both become "1244"
+    text_lower = text.lower()
+    # Remove spaces around punctuation first
+    text_normalized = re.sub(r'\s*([{}])\s*'.format(re.escape(string.punctuation)), r'\1', text_lower)
+    # Now remove all punctuation
+    text_no_punct = text_normalized.translate(TRANSLATOR)
+    # Collapse whitespace
+    return " ".join(text_no_punct.split())
 
 
 def build_caption_index(coco_path: Path) -> Dict[str, List[Tuple[str, int]]]:

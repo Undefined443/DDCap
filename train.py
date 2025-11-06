@@ -104,13 +104,11 @@ class ClipCocoDataset(Dataset):
         tokens, mask, gt = self.pad_tokens(item)
         img_id = self.image_ids[item]
         # train+restval
-        # filename = f"{self.data_root}/train2014/COCO_train2014_{int(img_id):012d}.jpg"
-        filename = f"{self.data_root}/train2014/{int(img_id):012d}.jpg"
+        filename = f"{self.data_root}/train2014/COCO_train2014_{int(img_id):012d}.jpg"
         try:
             image = io1.imread(filename)
         except:
-            # filename = f"{self.data_root}/val2014/COCO_val2014_{int(img_id):012d}.jpg"
-            filename = f"{self.data_root}/val2014/{int(img_id):012d}.jpg"
+            filename = f"{self.data_root}/val2014/COCO_val2014_{int(img_id):012d}.jpg"
             image = io1.imread(filename)
         image = Image.fromarray(image)
         image = self.preprocess(image)
@@ -163,8 +161,7 @@ class ClipCocoValDataset(Dataset):
         _filename = self.files[item]
         filename = f"{self.data_root}/val2014/{_filename}"
         for x in self.annotation:
-            # if 'COCO_val2014_' + str(x['image_id']).zfill(12) + '.jpg' == _filename:
-            if str(x['image_id']).zfill(12) + '.jpg' == _filename:
+            if 'COCO_val2014_' + str(x['image_id']).zfill(12) + '.jpg' == _filename:
                 caption = x['caption']
                 break
         tokens = torch.tensor(self.tokenizer.encode(caption), dtype=torch.int64)

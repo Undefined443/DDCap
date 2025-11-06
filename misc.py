@@ -439,6 +439,7 @@ def evaluate_on_coco_caption(results, res_file, label_file, outfile=None):
     """
         # ref to fake example: https://github.com/LuoweiZhou/coco-caption/tree/de6f385503ac9a4305a1dcdc39c02312f9fa13fc
     """
+    import os
     assert label_file.endswith('.json')
     parsed_res = []
     for result in results:
@@ -447,30 +448,39 @@ def evaluate_on_coco_caption(results, res_file, label_file, outfile=None):
         # cap = result['result'].replace('<|startoftext|>', '').replace('<|endoftext|>', '').replace('!', '').replace(' .', '.').strip() #result["ground truth"][0]
         cap = str(result['result'].split('<|endoftext|>')[0].strip())
         parsed_res.append({"image_id": id, "caption": cap})
+
+    # Write intermediate formatted file
     if not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0:
         json.dump(parsed_res, open(res_file, 'w'))
 
-    coco = COCO(label_file)
-    cocoRes = coco.loadRes(res_file)
-    cocoEval = COCOEvalCap(coco, cocoRes, 'corpus')
+    try:
+        coco = COCO(label_file)
+        cocoRes = coco.loadRes(res_file)
+        cocoEval = COCOEvalCap(coco, cocoRes, 'corpus')
 
-    # evaluate on a subset of images by setting
-    # cocoEval.params['image_id'] = cocoRes.getImgIds()
-    # please remove this line when evaluating the full validation set
-    cocoEval.params['image_id'] = cocoRes.getImgIds()
+        # evaluate on a subset of images by setting
+        # cocoEval.params['image_id'] = cocoRes.getImgIds()
+        # please remove this line when evaluating the full validation set
+        cocoEval.params['image_id'] = cocoRes.getImgIds()
 
-    # evaluate results
-    # SPICE will take a few minutes the first time, but speeds up due to caching
-    cocoEval.evaluate()
-    result = cocoEval.eval
-    result = {k: v * 100 for k, v in result.items()}
-    if not outfile:
-        print(result)
-    else:
+        # evaluate results
+        # SPICE will take a few minutes the first time, but speeds up due to caching
+        cocoEval.evaluate()
+        result = cocoEval.eval
+        result = {k: v * 100 for k, v in result.items()}
+        if not outfile:
+            print(result)
+        else:
+            if not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0:
+                with open(outfile, 'w') as fp:
+                    json.dump(result, fp, indent=4)
+        return result
+    finally:
+        # Clean up intermediate formatted file after evaluation
         if not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0:
-            with open(outfile, 'w') as fp:
-                json.dump(result, fp, indent=4)
-    return result
+            if os.path.exists(res_file):
+                os.remove(res_file)
+                print(f"Cleaned up intermediate file: {res_file}")
 
 
 def convert_tsv_to_coco_format(res_tsv, outfile,

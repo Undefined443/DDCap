@@ -1,15 +1,26 @@
+## 训练
+
+```sh
+torchrun --nproc-per-node auto train.py --out_dir results --tag caption_diff_vitb16
+```
+
 ## COCO
 
 转换COCO生成结果：
 
 ```sh
-uv run utils/convert_coco_results.py --input_json <input.json> --output_json <prediction.json>
+input="/path/to/epoch-log"
+output="/path/to/prediction"
+uv run utils/convert_coco_results.py --epoch-log $input --output $output
 ```
 
 评估COCO生成结果:
 
 ```sh
-uv run utils/eval_coco_results.py --predictions <prediction.json>
+export PYTHONPATH="$PWD"
+input="/path/to/prediction"
+output="/path/to/result"
+uv run utils/eval_coco_results.py --predictions $input --output $output
 ```
 
 ## ImageNet

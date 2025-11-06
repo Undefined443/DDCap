@@ -45,7 +45,7 @@ def load_predictions(pred_file):
 def main():
     parser = argparse.ArgumentParser(description='评估图像描述模型在COCO数据集上的表现')
     parser.add_argument('--predictions', required=True, help='模型预测结果文件（JSON格式）')
-    parser.add_argument('--ground_truth', default='./MSCOCO_Caption/annotations/captions_val2014.json',
+    parser.add_argument('--ground_truth', default='MSCOCO_Caption/annotations/captions_val2014.json',
                         help='COCO ground truth文件路径')
     parser.add_argument('--output', default='evaluation_results.json', help='保存评估结果的路径')
     args = parser.parse_args()
